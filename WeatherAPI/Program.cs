@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Net;
 using System.Text.Json;
+using DotNetEnv;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Models;
@@ -11,6 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Configuration.AddEnvironmentVariables();
 
 var app = builder.Build();
 
@@ -23,7 +25,11 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-const string apiKey = "HPBLYE9ZNT2US2HH8RP5DFP8X";
+// Load .env file
+Env.Load();
+
+// Get API key from environment variables
+string apiKey = Environment.GetEnvironmentVariable("API_KEY")!;
 
 app.MapGet("/api/weather/{location}/{date1:datetime?}/{date2:datetime?}",
         async Task<Results<Ok<object>, BadRequest, InternalServerError>> (string location, DateTime? date1, DateTime? date2, [FromQuery] string unitGroup = "metric",
