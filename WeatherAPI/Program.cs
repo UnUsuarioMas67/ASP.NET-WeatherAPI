@@ -35,7 +35,7 @@ app.UseHttpsRedirection();
 Env.Load();
 
 // Get API key from .env file
-string apiKey = Environment.GetEnvironmentVariable("API_KEY")!;
+string apiKey = Environment.GetEnvironmentVariable("VISUAL_CROSSING_API_KEY")!;
 
 app.MapGet("/api/weather/{location}/{date1:datetime?}/{date2:datetime?}",
         async Task<Results<Ok<WeatherResult>, BadRequest, InternalServerError>>
