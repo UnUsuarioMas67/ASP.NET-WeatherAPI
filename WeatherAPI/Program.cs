@@ -43,7 +43,7 @@ app.MapGet("/api/weather/{location}/{date1:datetime?}/{date2:datetime?}",
             string lang = "en") =>
         {
             date1 ??= DateTime.Now;
-            date2 ??= DateTime.Now.AddDays(14);
+            date2 ??= date1.Value.AddDays(14);
 
             var client = factory.CreateClient("WeatherAPI");
             var uri = $"/VisualCrossingWebServices/rest/services/timeline/{location}/{date1.Value:yyyy-MM-dd}/{date2.Value:yyyy-MM-dd}?unitGroup={unitGroup}&elements=datetime%2CdatetimeEpoch%2Cname%2Caddress%2CresolvedAddress%2Clatitude%2Clongitude%2Ctemp%2Cfeelslike%2Cdew%2Cprecip%2Cprecipprob%2Cprecipcover%2Cpreciptype%2Csnow%2Cwindspeed%2Cwinddir%2Cpressure%2Cconditions%2Cdescription%2Cicon&include=hours&key={apiKey}&contentType=json&lang={lang}";
@@ -52,9 +52,9 @@ app.MapGet("/api/weather/{location}/{date1:datetime?}/{date2:datetime?}",
             {
                 var response = await client.GetAsync(uri);
                 response.EnsureSuccessStatusCode();
+                
                 var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
                 var data = await response.Content.ReadFromJsonAsync<WeatherResult>(options);
-
                 return TypedResults.Ok(data);
             }
             catch (HttpRequestException e)
@@ -70,7 +70,7 @@ app.MapGet("/api/weather/{location}/{date1:datetime?}/{date2:datetime?}",
     {
         Summary = "Get Weather Data",
         Description = "Returns weather data from the Visual Crossing API",
-        Tags = new List<OpenApiTag> { new() { Name = "Visual Crossing" }, new() { Name = "Weather" } }
+        Tags = new List<OpenApiTag> { new() { Name = "Visual Crossing" }, new() { Name = "Weather" } },
     });
 
 app.Run();
