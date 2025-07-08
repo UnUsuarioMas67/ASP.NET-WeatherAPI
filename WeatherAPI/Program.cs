@@ -35,19 +35,18 @@ app.UseHttpsRedirection();
 Env.Load();
 
 // Get API key from .env file
-string apiKey = Environment.GetEnvironmentVariable("VISUAL_CROSSING_API_KEY") 
-                ?? throw new InvalidOperationException("VISUAL_CROSSING_API_KEY not found in .env file");
+var apiKey = Environment.GetEnvironmentVariable("VISUAL_CROSSING_API_KEY")
+             ?? throw new InvalidOperationException("VISUAL_CROSSING_API_KEY not set in .env file");
 
 app.MapGet("/api/weather/{location}/{date1:datetime?}/{date2:datetime?}",
         async Task<Results<Ok<WeatherResult>, BadRequest, InternalServerError>>
-        (IHttpClientFactory factory, string location, DateTime? date1, DateTime? date2, string unitGroup = "metric",
-            string lang = "en") =>
+            (IHttpClientFactory factory, string location, DateTime? date1, DateTime? date2) =>
         {
             date1 ??= DateTime.Now;
             date2 ??= date1.Value.AddDays(14);
 
             var client = factory.CreateClient("WeatherAPI");
-            var uri = $"/VisualCrossingWebServices/rest/services/timeline/{location}/{date1.Value:yyyy-MM-dd}/{date2.Value:yyyy-MM-dd}?unitGroup={unitGroup}&elements=datetime%2CdatetimeEpoch%2Cname%2Caddress%2CresolvedAddress%2Clatitude%2Clongitude%2Ctemp%2Cfeelslike%2Cdew%2Cprecip%2Cprecipprob%2Cprecipcover%2Cpreciptype%2Csnow%2Cwindspeed%2Cwinddir%2Cpressure%2Cconditions%2Cdescription%2Cicon&include=hours&key={apiKey}&contentType=json&lang={lang}";
+            var uri = $"/VisualCrossingWebServices/rest/services/timeline/{location}/{date1.Value:yyyy-MM-dd}/{date2.Value:yyyy-MM-dd}?unitGroup=metric&elements=datetime%2CdatetimeEpoch%2Cname%2Caddress%2CresolvedAddress%2Clatitude%2Clongitude%2Ctemp%2Cfeelslike%2Cdew%2Cprecip%2Cprecipprob%2Cprecipcover%2Cpreciptype%2Csnow%2Cwindspeed%2Cwinddir%2Cpressure%2Cconditions%2Cdescription%2Cicon&include=hours&key={apiKey}&contentType=json";
 
             try
             {
