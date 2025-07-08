@@ -1,12 +1,14 @@
-using System.Globalization;
 using System.Net;
 using System.Text.Json;
 using DotNetEnv;
 using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Models;
 using Scalar.AspNetCore;
+using StackExchange.Redis;
 using WeatherAPI;
+
+// Load .env file
+Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +22,20 @@ builder.Services.AddHttpClient("WeatherAPI", client =>
     client.DefaultRequestHeaders.Add("Accept", "application/json");
 });
 
+var endpoint = Environment.GetEnvironmentVariable("REDIS_ENDPOINT")
+               ?? throw new InvalidOperationException("REDIS_ENDPOINT not set in .env file");
+var user = Environment.GetEnvironmentVariable("REDIS_USERNAME") 
+           ?? throw new InvalidOperationException("REDIS_USERNAME not set in .env file");
+var password = Environment.GetEnvironmentVariable("REDIS_PASSWORD") 
+               ?? throw new InvalidOperationException("REDIS_PASSWORD not set in .env file");
+
+builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(new ConfigurationOptions
+{
+    EndPoints = { endpoint },
+    User = user,
+    Password = password,
+}));
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -30,9 +46,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-// Load .env file
-Env.Load();
 
 // Get API key from .env file
 var apiKey = Environment.GetEnvironmentVariable("VISUAL_CROSSING_API_KEY")
