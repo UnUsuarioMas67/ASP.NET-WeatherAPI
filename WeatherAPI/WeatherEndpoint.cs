@@ -2,6 +2,7 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.OpenApi.Models;
+using NRedisStack.RedisStackCommands;
 using StackExchange.Redis;
 
 namespace WeatherAPI;
@@ -35,25 +36,35 @@ public static class WeatherEndpoint
     {
         date1 ??= DateTime.Now;
         date2 ??= date1.Value.AddDays(14);
-
-        var client = clientFactory.CreateClient("WeatherAPI");
-        var uri = $"/VisualCrossingWebServices/rest/services/timeline/{location}/{date1.Value:yyyy-MM-dd}/{date2.Value:yyyy-MM-dd}?unitGroup=metric&elements=datetime%2CdatetimeEpoch%2Cname%2Caddress%2CresolvedAddress%2Clatitude%2Clongitude%2Ctemp%2Cfeelslike%2Cdew%2Cprecip%2Cprecipprob%2Cprecipcover%2Cpreciptype%2Csnow%2Cwindspeed%2Cwinddir%2Cpressure%2Cconditions%2Cdescription%2Cicon&include=hours&key={ApiKey}&contentType=json";
-
-        try
+        var requestString = $"{location}/{date1.Value:yyyy-MM-dd}/{date2.Value:yyyy-MM-dd}";
+        
+        var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+        
+        var result = await muxer.GetDatabase().JSON().GetAsync<WeatherResult>(requestString, serializerOptions: jsonOptions);
+        
+        if (result == null)
         {
-            var response = await client.GetAsync(uri);
-            response.EnsureSuccessStatusCode();
-                
-            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-            var data = await response.Content.ReadFromJsonAsync<WeatherResult>(options);
-            return TypedResults.Ok(data);
-        }
-        catch (HttpRequestException e)
-        {
-            if (e.StatusCode == HttpStatusCode.BadRequest)
-                return TypedResults.BadRequest();
+            var client = clientFactory.CreateClient("WeatherAPI");
+            var uri =
+                $"/VisualCrossingWebServices/rest/services/timeline/{requestString}?unitGroup=metric&elements=datetime%2CdatetimeEpoch%2Cname%2Caddress%2CresolvedAddress%2Clatitude%2Clongitude%2Ctemp%2Cfeelslike%2Cdew%2Cprecip%2Cprecipprob%2Cprecipcover%2Cpreciptype%2Csnow%2Cwindspeed%2Cwinddir%2Cpressure%2Cconditions%2Cdescription%2Cicon&include=hours&key={ApiKey}&contentType=json";
 
-            return TypedResults.InternalServerError();
+            try
+            {
+                var response = await client.GetAsync(uri);
+                response.EnsureSuccessStatusCode();
+
+                result = await response.Content.ReadFromJsonAsync<WeatherResult>(jsonOptions);
+                await muxer.GetDatabase().JSON().SetAsync(requestString, "$", result!, serializerOptions: jsonOptions);
+            }
+            catch (HttpRequestException e)
+            {
+                if (e.StatusCode == HttpStatusCode.BadRequest)
+                    return TypedResults.BadRequest();
+
+                return TypedResults.InternalServerError();
+            }
         }
+        
+        return TypedResults.Ok(result);
     }
 }
