@@ -39,8 +39,8 @@ public static class WeatherEndpoint
         var requestString = $"{location}/{date1.Value:yyyy-MM-dd}/{date2.Value:yyyy-MM-dd}";
         
         var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-        
-        var result = await muxer.GetDatabase().JSON().GetAsync<WeatherResult>(requestString, serializerOptions: jsonOptions);
+        var db = muxer.GetDatabase();
+        var result = await db.JSON().GetAsync<WeatherResult>(requestString, serializerOptions: jsonOptions);
         
         if (result == null)
         {
@@ -54,7 +54,8 @@ public static class WeatherEndpoint
                 response.EnsureSuccessStatusCode();
 
                 result = await response.Content.ReadFromJsonAsync<WeatherResult>(jsonOptions);
-                await muxer.GetDatabase().JSON().SetAsync(requestString, "$", result!, serializerOptions: jsonOptions);
+                await db.JSON().SetAsync(requestString, "$", result!, serializerOptions: jsonOptions);
+                await db.KeyExpireAsync(requestString, TimeSpan.FromHours(12));
             }
             catch (HttpRequestException e)
             {
