@@ -49,11 +49,4 @@ app.UseHttpsRedirection();
 
 WeatherEndpoint.Map(app);
 
-app.MapGet("/redis-test", async (IConnectionMultiplexer muxer) =>
-{
-    var db = muxer.GetDatabase();
-    var value = await db.StringSetAndGetAsync("test", "redis works");
-    return value.ToString();
-});
-
 app.Run();
