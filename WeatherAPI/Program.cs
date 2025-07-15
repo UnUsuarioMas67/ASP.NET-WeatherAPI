@@ -1,8 +1,6 @@
-using System.Net;
-using System.Text.Json;
+using System.Threading.RateLimiting;
 using DotNetEnv;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.RateLimiting;
 using Scalar.AspNetCore;
 using StackExchange.Redis;
 using WeatherAPI;
@@ -35,8 +33,22 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Conn
     User = user,
     Password = password,
 }));
+builder.Services.AddRateLimiter(rateLimiterOptions =>
+{
+    rateLimiterOptions.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    rateLimiterOptions.AddFixedWindowLimiter("fixed", options =>
+    {
+        options.PermitLimit = 5;
+        options.Window = TimeSpan.FromSeconds(10);
+        options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        options.QueueLimit = 5;
+
+    });
+});
 
 var app = builder.Build();
+
+app.UseRateLimiter();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

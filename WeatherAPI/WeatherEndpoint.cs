@@ -27,7 +27,8 @@ public static class WeatherEndpoint
                 Summary = "Get Weather Data",
                 Description = "Returns weather data from the Visual Crossing API",
                 Tags = new List<OpenApiTag> { new() { Name = "Visual Crossing" }, new() { Name = "Weather" } },
-            });
+            })
+            .RequireRateLimiting("fixed");
     }
 
     private static async Task<Results<Ok<WeatherResult>, BadRequest, InternalServerError>> GetWeather(
