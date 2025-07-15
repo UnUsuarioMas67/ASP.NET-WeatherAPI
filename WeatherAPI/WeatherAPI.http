@@ -1,0 +1,11 @@
+@WeatherAPI_HostAddress = http://localhost:5043
+
+###
+
+GET {{WeatherAPI_HostAddress}}/api/weather/adwadawdaw
+Accept: application/json
+
+###
+
+GET {{WeatherAPI_HostAddress}}/api/weather/New York/2025-05-13/2025-05-17
+Accept: application/json
