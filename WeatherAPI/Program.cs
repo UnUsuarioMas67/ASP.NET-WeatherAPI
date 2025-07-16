@@ -20,8 +20,8 @@ builder.Services.AddHttpClient("WeatherAPI", client =>
     client.DefaultRequestHeaders.Add("Accept", "application/json");
 });
 
-var endpoint = Environment.GetEnvironmentVariable("REDIS_ENDPOINT")
-               ?? throw new InvalidOperationException("REDIS_ENDPOINT not set in .env file");
+var endpoint = Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING")
+               ?? throw new InvalidOperationException("REDIS_CONNECTION_STRING not set in .env file");
 var user = Environment.GetEnvironmentVariable("REDIS_USERNAME") 
            ?? throw new InvalidOperationException("REDIS_USERNAME not set in .env file");
 var password = Environment.GetEnvironmentVariable("REDIS_PASSWORD") 
