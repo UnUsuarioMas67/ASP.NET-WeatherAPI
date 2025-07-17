@@ -2,5 +2,5 @@
 
 ###
 
-GET {{WeatherAPI_HostAddress}}/api/weather/New York/2025-05-13/2025-05-17
+GET {{WeatherAPI_HostAddress}}/api/weather/New York
 Accept: application/json
