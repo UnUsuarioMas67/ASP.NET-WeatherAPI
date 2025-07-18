@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.OpenApi.Models;
 using NRedisStack.RedisStackCommands;
 using StackExchange.Redis;
+using WeatherAPI.Models;
 
 namespace WeatherAPI;
 
@@ -31,32 +32,30 @@ public static class WeatherEndpoint
             .RequireRateLimiting("fixed");
     }
 
-    private static async Task<Results<Ok<WeatherResult>, BadRequest, InternalServerError>> GetWeather(
-        IHttpClientFactory clientFactory, IConnectionMultiplexer muxer, string location, DateTime? date1,
-        DateTime? date2)
+    private static async Task<Results<Ok<WeatherData>, BadRequest, InternalServerError>> GetWeather(
+        IHttpClientFactory clientFactory, IConnectionMultiplexer muxer, string location)
     {
-        date1 ??= DateTime.Now;
-        date2 ??= date1.Value.AddDays(14);
-        var requestString = $"{location}/{date1.Value:yyyy-MM-dd}/{date2.Value:yyyy-MM-dd}";
+        var redisKey = location.ToLower();
         
         var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
         var db = muxer.GetDatabase();
-        var result = await db.JSON().GetAsync<WeatherResult>(requestString, serializerOptions: jsonOptions);
+        var weatherData = await db.JSON().GetAsync<WeatherData>(redisKey, serializerOptions: jsonOptions);
         
-        if (result == null)
+        if (weatherData == null)
         {
-            var client = clientFactory.CreateClient("WeatherAPI");
+            var client = clientFactory.CreateClient();
             var uri =
-                $"/VisualCrossingWebServices/rest/services/timeline/{requestString}?unitGroup=metric&elements=datetime%2CdatetimeEpoch%2Cname%2Caddress%2CresolvedAddress%2Clatitude%2Clongitude%2Ctemp%2Cfeelslike%2Cdew%2Cprecip%2Cprecipprob%2Cprecipcover%2Cpreciptype%2Csnow%2Cwindspeed%2Cwinddir%2Cpressure%2Cconditions%2Cdescription%2Cicon&include=hours&key={ApiKey}&contentType=json";
-
+                $"https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/{location}?unitGroup=metric&key=CKWTDCRXG7KFL6TL6RBE8JJZ4&contentType=json";
             try
             {
                 var response = await client.GetAsync(uri);
                 response.EnsureSuccessStatusCode();
 
-                result = await response.Content.ReadFromJsonAsync<WeatherResult>(jsonOptions);
-                await db.JSON().SetAsync(requestString, "$", result!, serializerOptions: jsonOptions);
-                await db.KeyExpireAsync(requestString, TimeSpan.FromHours(12));
+                var result = await response.Content.ReadFromJsonAsync<VisualCrossingResponse>(jsonOptions);
+                weatherData = WeatherData.FromVisualCrossingResponse(result!);
+                
+                await db.JSON().SetAsync(redisKey, "$", weatherData, serializerOptions: jsonOptions);
+                await db.KeyExpireAsync(redisKey, TimeSpan.FromHours(12));
             }
             catch (HttpRequestException e)
             {
@@ -67,6 +66,6 @@ public static class WeatherEndpoint
             }
         }
         
-        return TypedResults.Ok(result);
+        return TypedResults.Ok(weatherData);
     }
 }

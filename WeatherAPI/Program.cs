@@ -14,11 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Configuration.AddEnvironmentVariables();
 builder.Services.AddOpenApi();
-builder.Services.AddHttpClient("WeatherAPI", client =>
-{
-    client.BaseAddress = new Uri("https://weather.visualcrossing.com");
-    client.DefaultRequestHeaders.Add("Accept", "application/json");
-});
+builder.Services.AddHttpClient();
 
 var endpoint = Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING")
                ?? throw new InvalidOperationException("REDIS_CONNECTION_STRING not set in .env file");
