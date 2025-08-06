@@ -24,7 +24,7 @@ Solution for the roadmap.sh project: [Weather API](https://roadmap.sh/projects/w
 
 ```bash
 git clone https://github.com/UnUsuarioMas67/ASP.NET-WeatherAPI
-cd ASP.NET-WeatherAPI
+cd WeatherAPI
 ```
 
 ### 2. Setup Environment Variables
